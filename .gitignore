@@ -1,4 +1,4 @@
-*.md
+gitcheat.md
 __pycache__/
 docs/
 data/
