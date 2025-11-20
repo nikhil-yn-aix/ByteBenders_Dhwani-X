@@ -10,3 +10,4 @@ output/
 speaker_audios/
 audio_maker.py
 *.txt
+.cls
