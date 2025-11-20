@@ -1,4 +1,5 @@
 *.md
+__pycache__/
 docs/
 data/
 ESC-50-master/
