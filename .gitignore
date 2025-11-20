@@ -7,7 +7,7 @@ evaluate/
 logs/
 models_cache/
 output/
-speaker_audios/
 audio_maker.py
 *.txt
 .cls
+obspdf/

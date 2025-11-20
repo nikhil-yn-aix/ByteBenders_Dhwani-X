@@ -12,36 +12,32 @@ from config import Config
 
 
 class BufferManager:
-    """
-    Safely handles microphone recording, buffering, and chunk callbacks.
-    All background-thread exceptions are pushed into error_queue and NEVER printed.
-    """
 
     def __init__(self, config: Config = None, callback: Optional[Callable] = None):
         self.config = config or Config.default()
 
-        # Callback used to process (chunk, context)
+        
         self.process_callback = callback
 
-        # Queues
+        
         self.audio_queue = queue.Queue(maxsize=self.config.buffer.queue_maxsize)
-        self.error_queue = queue.Queue()  # background thread errors appear here
+        self.error_queue = queue.Queue()  
 
-        # Buffers
+        
         self.ring_buffer = deque(maxlen=self.config.audio.context_samples)
         self.speech_buffer = []
         self.in_speech = False
 
-        # Stats
+        
         self.total_chunks_received = 0
         self.total_chunks_processed = 0
 
-        # Thread controls
+        
         self.is_recording = False
         self.audio_stream = None
         self.worker_thread = None
 
-        # Logger (to file only, no prints)
+        
         self.logger = logging.getLogger("BufferManager")
         if not self.logger.handlers:
             os.makedirs("logs", exist_ok=True)
@@ -50,9 +46,9 @@ class BufferManager:
             self.logger.addHandler(fh)
             self.logger.setLevel(logging.INFO)
 
-    # ------------------------------------------------------------------
-    # AUDIO CALLBACK — runs in sounddevice thread
-    # ------------------------------------------------------------------
+    
+    
+    
     def _audio_callback(self, indata, frames, time_info, status):
         """Audio callback MUST NEVER crash or print."""
         try:
@@ -64,7 +60,7 @@ class BufferManager:
 
             chunk = indata.copy()
 
-            # Queue for processing loop
+            
             try:
                 self.audio_queue.put_nowait(chunk)
                 self.total_chunks_received += 1
@@ -72,7 +68,7 @@ class BufferManager:
                 self.logger.warning("Audio queue full — dropping chunk")
                 return
 
-            # Call processing callback inside this thread (rare)
+            
             cb = self.process_callback
             if cb is not None:
                 try:
@@ -90,16 +86,16 @@ class BufferManager:
             except Exception:
                 pass
 
-    # ------------------------------------------------------------------
-    # PROCESSING LOOP (runs in a Python thread)
-    # ------------------------------------------------------------------
+    
+    
+    
     def _processing_loop(self):
         """Consumes audio_queue chunks and updates ring buffer."""
         while self.is_recording:
             try:
                 chunk = self.audio_queue.get(timeout=0.5)
 
-                # Update ring buffer
+                
                 try:
                     self.ring_buffer.extend(chunk.flatten())
                 except Exception:
@@ -108,7 +104,7 @@ class BufferManager:
                     except Exception:
                         pass
 
-                # Process chunk callback (primary callback)
+                
                 cb = self.process_callback
                 if cb is not None:
                     try:
@@ -130,9 +126,9 @@ class BufferManager:
                 except Exception:
                     pass
 
-    # ------------------------------------------------------------------
-    # START / STOP RECORDING
-    # ------------------------------------------------------------------
+    
+    
+    
     def start_recording(self, device=None):
         """Starts microphone + worker thread safely."""
         if self.is_recording:
@@ -140,7 +136,7 @@ class BufferManager:
 
         self.is_recording = True
 
-        # Start sounddevice stream
+        
         try:
             self.audio_stream = sd.InputStream(
                 samplerate=self.config.audio.sample_rate,
@@ -155,7 +151,7 @@ class BufferManager:
             self.is_recording = False
             raise RuntimeError(f"Failed to start microphone stream: {e}")
 
-        # Start processing worker
+        
         self.worker_thread = threading.Thread(target=self._processing_loop, daemon=True)
         self.worker_thread.start()
 
@@ -168,7 +164,7 @@ class BufferManager:
 
         self.is_recording = False
 
-        # Stop mic stream
+        
         try:
             if self.audio_stream:
                 self.audio_stream.stop()
@@ -179,7 +175,7 @@ class BufferManager:
             except Exception:
                 pass
 
-        # Join worker thread
+        
         if self.worker_thread:
             try:
                 self.worker_thread.join(timeout=1.0)
@@ -188,9 +184,9 @@ class BufferManager:
 
         self.logger.info("Recording stopped")
 
-    # ------------------------------------------------------------------
-    # SPEECH STATE CONTROL — used by VAD logic in LivePipeline
-    # ------------------------------------------------------------------
+    
+    
+    
     def update_speech_state(self, is_speech: bool):
         """Tracks start/end of speech segments."""
         prev = self.in_speech
@@ -214,9 +210,9 @@ class BufferManager:
             return None
         return np.array(self.speech_buffer, dtype=np.float32)
 
-    # ------------------------------------------------------------------
-    # STATS FOR DEBUGGING
-    # ------------------------------------------------------------------
+    
+    
+    
     def get_buffer_stats(self):
         return {
             "chunks_received": self.total_chunks_received,
@@ -225,9 +221,9 @@ class BufferManager:
             "speech_buffer_length": len(self.speech_buffer)
         }
 
-    # ------------------------------------------------------------------
-    # DEVICE ENUMERATION
-    # ------------------------------------------------------------------
+    
+    
+    
     @staticmethod
     def get_available_devices():
         """Returns first few microphone devices."""

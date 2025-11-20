@@ -5,10 +5,6 @@ import json
 import time
 from pathlib import Path
 
-# ==============================================
-# 🔧 SYSTEM SETUP
-# ==============================================
-
 sys.path.insert(0, str(Path(__file__).parent))
 
 try:
@@ -19,9 +15,9 @@ except ImportError:
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-# ==============================================
-# 🎨 VISUALIZATION ENGINES
-# ==============================================
+
+
+
 
 def get_pipeline_html(current_step):
     """
@@ -46,7 +42,7 @@ def get_pipeline_html(current_step):
         elif i == current_step:
             status = "active"
         
-        # Connector Line
+        
         connector = ""
         if i < len(steps) - 1:
             c_status = "active" if current_step != -1 and i < current_step else ""
@@ -132,9 +128,9 @@ def get_status_display(step_idx, elapsed_time):
     </div>
     """
 
-# ==============================================
-# ⚙️ CORE LOGIC (FIXED TIMING)
-# ==============================================
+
+
+
 
 def run_mission(audio_path, ground_truth, save_check):
     if audio_path is None:
@@ -151,7 +147,7 @@ def run_mission(audio_path, ground_truth, save_check):
             output_dir = Path("./output/dhwani_x")
             output_dir.mkdir(parents=True, exist_ok=True)
             
-            # Process with real-time progress
+            
             for progress_update in pipeline.process(
                 audio_path=Path(audio_path),
                 output_dir=output_dir,
@@ -162,15 +158,15 @@ def run_mission(audio_path, ground_truth, save_check):
                 step_idx = progress_update.get("step", 0)
                 elapsed = progress_update.get("elapsed", 0)
                 
-                # Update UI in real-time
+                
                 pipeline_html = get_pipeline_html(step_idx)
                 status_html = get_status_display(step_idx, elapsed)
                 
-                # Check if this is the final step
+                
                 if step_idx == 5 and "results" in progress_update:
                     results = progress_update["results"]
                     
-                    # Format metrics
+                    
                     snr = results['audio_quality']['snr_improvement_db']
                     snr_col = "text-green" if snr > 10 else "text-yellow"
                     wer = results['accuracy']['wer'] or 0
@@ -213,7 +209,7 @@ def run_mission(audio_path, ground_truth, save_check):
                     
                     denoised_path = output_dir / "final_denoised.wav"
                     final_audio = str(denoised_path) if denoised_path.exists() else audio_path
-                    # Extract transcription text
+                    
                     transcription_text = results['transcription']['text']
 
                     yield (
@@ -226,7 +222,7 @@ def run_mission(audio_path, ground_truth, save_check):
                     )
 
                 else:
-                    # Intermediate progress update
+                    
                     yield (
                         pipeline_html,
                         status_html,
@@ -236,11 +232,11 @@ def run_mission(audio_path, ground_truth, save_check):
                         None
                     )
                 
-                # ⚠️ CRITICAL FIX: 0.3s sleep prevents Content-Length errors
+                
                 time.sleep(0.3)
         
         else:
-            # Fallback simulation
+            
             sequence = [(0, 2.5), (1, 3.5), (2, 3.0), (3, 6.0), (4, 3.5)]
             start_time = time.time()
             
@@ -260,10 +256,10 @@ def run_mission(audio_path, ground_truth, save_check):
                         "",
                         None
                     )
-                    # ⚠️ CRITICAL: 0.3s to avoid Content-Length errors
+                    
                     time.sleep(0.3)
             
-            # Fake results for simulation
+            
             time.sleep(0.5)
             results = {
                 "metadata": {"audio_duration_sec": 5.0},
@@ -346,9 +342,9 @@ def run_mission(audio_path, ground_truth, save_check):
             None
         )
 
-# ==============================================
-# 💎 ENHANCED CSS - CLEANER TEXTBOXES
-# ==============================================
+
+
+
 
 css = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=JetBrains+Mono:wght@400;700&display=swap');
@@ -1018,9 +1014,9 @@ input[type="checkbox"]:hover,
 }
 """
 
-# ==============================================
-# 🖥️ UI COMPOSITION
-# ==============================================
+
+
+
 
 theme = gr.themes.Base(
     primary_hue="cyan",
@@ -1036,7 +1032,7 @@ theme = gr.themes.Base(
 
 with gr.Blocks(title="DHWANI-X", css=css, theme=theme) as demo:
     
-    # HEADER WITH CREDITS
+    
     gr.HTML("""
         <div class="header-box">
             <div class="main-title">DHWANI<span class="accent-x">-X</span></div>
@@ -1049,7 +1045,7 @@ with gr.Blocks(title="DHWANI-X", css=css, theme=theme) as demo:
 
     with gr.Row(elem_id="main-row"):
         
-        # LEFT COLUMN: CONTROLS
+        
         with gr.Column(scale=4, elem_classes=["control-panel"]):
             gr.HTML('<h3><i class="ri-equalizer-3-line"></i> SIGNAL INPUT</h3>')
             
@@ -1082,16 +1078,16 @@ with gr.Blocks(title="DHWANI-X", css=css, theme=theme) as demo:
             </div>
             """)
 
-        # RIGHT COLUMN: VISUALIZATION
+        
         with gr.Column(scale=6):
             
-            # 1. PIPELINE TRACKER
+            
             pipeline_view = gr.HTML(value=get_pipeline_html(-1))
             
-            # 2. STATUS DISPLAY
+            
             status_view = gr.HTML(value=get_status_display(-1, 0))
             
-            # 3. RESULTS
+            
             metrics_view = gr.HTML(visible=False)
             
             with gr.Tabs():
@@ -1114,7 +1110,7 @@ with gr.Blocks(title="DHWANI-X", css=css, theme=theme) as demo:
                 with gr.Tab("💾 TECHNICAL LOGS"):
                     json_output = gr.JSON(show_label=False)
 
-    # LOGIC BINDING
+    
     run_btn.click(
         fn=run_mission,
         inputs=[audio_input, ground_truth, save_check],
