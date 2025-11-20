@@ -1,0 +1,11 @@
+*.md
+docs/
+data/
+ESC-50-master/
+evaluate/
+logs/
+models_cache/
+output/
+speaker_audios/
+audio_maker.py
+*.txt
